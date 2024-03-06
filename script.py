@@ -1,10 +1,13 @@
+# Copyright (C) 2024 Arkadiusz Choruży
+# github.com/achoruzy
+
 import bpy
 
 export_coll = bpy.data.collections.new("EXPORT_OBJECTS")
 bpy.context.scene.collection.children.link(export_coll)
 
 scene = bpy.context.scene
-obj_list = scene.objects
+obj_list = [obj for obj in scene.objects]
 
 for obj in obj_list:
     
@@ -25,7 +28,7 @@ for obj in obj_list:
             empty.name = f'Socket_{child.name}'
             empty.parent = obj_copy
 
-            bpy.context.scene.collection.objects.unlink(empty)
+            empty.users_collection[0].objects.unlink(empty)
             export_coll.objects.link(empty)
         
     obj_copy.location = (0, 0, 0)
