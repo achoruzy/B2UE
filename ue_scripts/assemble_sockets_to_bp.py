@@ -13,11 +13,11 @@ class ScriptObject(unreal.ToolMenuEntryScript):
         base_mesh = self.find_base_mesh()
         if not base_mesh: return
         
-        bp_name = f"BP_{base_mesh.get_full_name().removeprefix('SM_').removesuffix('_base')}"
-        actor = self.create_bp(bp_name, base_mesh.get_path_name())
-        path = actor.get_folder_path()
+        bp_name = f"BP_{base_mesh.get_name().removeprefix('SM_').removesuffix('_base')}"
+        print(f'bp_name: {bp_name}')
+        actor = self.create_bp(bp_name, base_mesh.get_path_name().removesuffix(bp_name)) # TODO: path to rework
         
-        so_subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)
+        so_subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem) # TODO: smtg wrong here
         root_sub_object = so_subsystem.k2_gather_subobject_data_for_instance(actor)[0]
         new_sub_object: unreal.StaticMesh = so_subsystem.add_new_subobject(unreal.AddNewSubobjectParams(
             parent_handle=root_sub_object,
@@ -25,6 +25,7 @@ class ScriptObject(unreal.ToolMenuEntryScript):
             ))
         
         # 2. get sockets
+        print('2. get sockets')
         sockets = new_sub_object.get_sockets_by_tag('')
         
         # 3. check for meshes to put in sockets in same localization
@@ -33,6 +34,7 @@ class ScriptObject(unreal.ToolMenuEntryScript):
         for socket in sockets:
             socket: unreal.StaticMeshSocket
             socket_name = socket.socket_name
+            print(socket_name)
             
             # editorUtility...
             
@@ -40,7 +42,7 @@ class ScriptObject(unreal.ToolMenuEntryScript):
         
         # 4. repeat for each subcomponent
         
-    def find_base_mesh(self) -> unreal.StaticMesh | None:
+    def find_base_mesh(self) -> unreal.StaticMesh:
         editorUtility = GetEditorUtility()
         selection = editorUtility.get_selected_assets()
         unreal.log(selection)
@@ -54,9 +56,9 @@ class ScriptObject(unreal.ToolMenuEntryScript):
         asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
         
         factory = unreal.BlueprintFactory()
-        factory.set_editor_property("Actor", unreal.Actor)
+        factory.set_editor_property('ParentClass', unreal.Actor)
         
-        bp_actor = asset_tools.create_asset_with_dialog(name, path, None, factory)
+        bp_actor = asset_tools.create_asset(name, path, None, factory)
         unreal.EditorAssetLibrary.save_loaded_asset(bp_actor)
         return bp_actor
     
