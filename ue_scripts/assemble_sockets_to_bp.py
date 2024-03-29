@@ -1,4 +1,8 @@
+# Copyright (C) 2024 Arkadiusz Choruży
+# github.com/achoruzy
+
 import unreal
+from pathlib import Path
 
 @unreal.uclass()
 class GetEditorUtility(unreal.GlobalEditorUtilityBase):
@@ -14,19 +18,26 @@ class ScriptObject(unreal.ToolMenuEntryScript):
         if not base_mesh: return
         
         bp_name = f"BP_{base_mesh.get_name().removeprefix('SM_').removesuffix('_base')}"
-        print(f'bp_name: {bp_name}')
-        actor = self.create_bp(bp_name, base_mesh.get_path_name().removesuffix(bp_name)) # TODO: path to rework
+        bp_path = Path(base_mesh.get_path_name()).parent.as_posix()
+
+        actor = self.create_bp(bp_name, bp_path)
         
-        so_subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem) # TODO: smtg wrong here
-        root_sub_object = so_subsystem.k2_gather_subobject_data_for_instance(actor)[0]
-        new_sub_object: unreal.StaticMesh = so_subsystem.add_new_subobject(unreal.AddNewSubobjectParams(
-            parent_handle=root_sub_object,
-            new_class=unreal.StaticMesh,
-            ))
+        subsystem = unreal.get_engine_subsystem(unreal.SubobjectDataSubsystem)
+        root_sub_object = subsystem.k2_gather_subobject_data_for_blueprint(actor)[0]
+        sub_object, _text = subsystem.add_new_subobject(
+            unreal.AddNewSubobjectParams(
+                parent_handle = root_sub_object,
+                new_class = unreal.StaticMeshComponent,
+                blueprint_context = actor
+                )
+            )
+        print(_text)
+        
+        
         
         # 2. get sockets
         print('2. get sockets')
-        sockets = new_sub_object.get_sockets_by_tag('')
+        sockets = base_mesh.get_sockets_by_tag('') # OK!
         
         # 3. check for meshes to put in sockets in same localization
         editorUtility = GetEditorUtility();
